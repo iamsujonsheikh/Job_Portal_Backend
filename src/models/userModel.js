@@ -1,18 +1,18 @@
+import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import { PHOTO_PATH, EMAIL_REGEX, JWT_SECRET_KEY } from "../secret/secret.js";
+
 
 const userSchema = new mongoose.Schema({
     firstname: {
         type: String,
         required: [true, "user first name is required"],
-        minlength: [8, "firstname should be at least 8 character"],
         maxlength: [12, "firstname should be at least 12 character"],
         trim: true
     },
-    firstname: {
+    lastname: {
         type: String,
-        required: [true, "user last name is required"],
-        minlength: [8, "lirstname should be at least 8 character"],
-        maxlength: [12, "lirstname should be at least 12 character"],
+        maxlength: [12, "lastname should be at least 12 character"],
         trim: true
     },
     email: {
@@ -20,7 +20,11 @@ const userSchema = new mongoose.Schema({
         required: [true, "user email is required"],
         lowercase: true,
         unique: true,
-        trim: true
+        trim: true,
+        validate: {
+            validator: (value) => EMAIL_REGEX.test(value),
+            message: 'Invalid email format',
+        }
     },
     password: {
         type: String,
@@ -34,21 +38,42 @@ const userSchema = new mongoose.Schema({
         trim: true
     },
     gender: {
-        type: string,
+        type: String,
         required: [true, "gender is required"],
         enum: ["Male", "Female"]
     },
     country: {
-        type: string,
+        type: String,
         required: [true, "country is required"]
     },
     photo: {
         type: String,
-        default: avater.png
+        default: PHOTO_PATH,
+    },
+    role: {
+        type: String,
+        required: true,
+        enum: ["Admin", "Employer", "Student"],
     }
-
 }, { timestamps: true });
 
+
+// jwt token
+userSchema.methods.generateToken = async function () {
+    try {
+        return jwt.sign({
+            userId: this._id.toString(),
+        },
+            JWT_SECRET_KEY,
+            {
+                expiresIn: "1d"
+            }
+        )
+
+    } catch (err) {
+        console.error(err.message)
+    }
+};
 const User = mongoose.model("User", userSchema);
 
 export default User;
